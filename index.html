@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConnectForum - Connect & Discuss</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/three@0.155.0/build/three.min.js"></script>
+    <link href="style.css" rel="stylesheet"> 
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#64748b',
+                        accent: '#f59e0b',
+                        dark: '#1e293b',
+                        light: '#f8fafc'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-xl">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <span class="ml-3 text-xl font-bold text-gray-900">ConnectForum</span>
+                    </div>
+                    <div class="hidden md:ml-6 md:flex md:space-x-8">
+                        <a href="#" class="border-b-2 border-primary text-gray-900 px-1 pt-1 text-sm font-medium">Home</a>
+                        <a href="#categories" class="border-b-2 border-transparent hover:border-gray-300 text-gray-500 hover:text-gray-700 px-1 pt-1 text-sm font-medium">Categories</a>
+                        <a href="#communityStats" class="border-b-2 border-transparent hover:border-gray-300 text-gray-500 hover:text-gray-700 px-1 pt-1 text-sm font-medium">Members</a>
+                        <a href="#footer" class="border-b-2 border-transparent hover:border-gray-300 text-gray-500 hover:text-gray-700 px-1 pt-1 text-sm font-medium">Help</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Notifications Bell (always visible) -->
+                    <div class="relative">
+    <button id="notifyBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200 relative" title="Notifications">
+        <!-- SVG bell -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="2">
+            <path d="M15 17h5l-1.4-1.4A2 2 0 0118 14v-3a6 6 0 10-12 0v3a2 2 0 01-.6 1.4L4 17h5"/>
+            <path d="M13.7 21a2 2 0 01-3.4 0"/>
+        </svg>
+
+        <!-- Badge -->
+        <span class="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold text-white bg-red-600 rounded-full">3</span>
+    </button>
+
+    <!-- Notification Panel NOW inside -->
+    <div id="notifyPanel" class="hidden notif-panel">
+        <p class="notif-title">Notifications</p>
+        <ul id="notifyList" class="notif-list"></ul>
+    </div>
+</div>
+
+                    
+                    
+
+                    <!-- Create Post Button (shown when user is logged in) -->
+                    <div id="createPostButton" class="hidden">
+                        <button onclick="openCreatePostModal()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition duration-200 flex items-center">
+                            <i class="fas fa-plus mr-2"></i>
+                            <span class="hidden sm:inline">Create Post</span>
+                        </button>
+                    </div>
+
+                    <div id="authArea" class="flex items-center space-x-4">
+                        <!-- Theme toggle -->
+                        <div class="mr-2 relative group">
+                            <button id="themeToggle" aria-label="Toggle theme" class="p-2 rounded-full transition-all duration-200 hover:scale-105" title="Switch to light mode">
+                                <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="5"></circle>
+                                </svg>
+                            </button>
+                            <!-- Tooltip -->
+                            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                                <span id="themeTooltip">Switch to light mode</span>
+                            </div>
+                        </div>
+                        <!-- Guest buttons (shown when no user) -->
+                        <div id="guestButtons">
+                            <button onclick="toggleAuthModal('login')" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 mr-2">
+                                <i class="fas fa-sign-in-alt mr-2"></i>Login
+                            </button>
+                            <button onclick="toggleAuthModal('register')" class="border border-primary text-primary px-4 py-2 rounded-lg hover:bg-primary hover:text-white transition duration-200">
+                                Register
+                            </button>
+                        </div>
+
+                        <!-- Authenticated user menu (hidden when no user) -->
+                        <div id="userMenu" class="hidden relative">
+                            <button id="userBtn" class="flex items-center space-x-2 focus:outline-none" onclick="toggleUserDropdown()">
+                                <div id="userAvatar" class="w-10 h-10 bg-gray-400 text-white rounded-full flex items-center justify-center font-semibold">U</div>
+                                <span id="userName" class="hidden md:inline text-gray-900 font-medium">User</span>
+                            </button>
+                            <div id="userDropdown" class="absolute right-0 mt-12 w-44 bg-white rounded-md shadow-lg py-2 hidden">
+                                <div class="px-4 py-2 text-sm text-gray-700">Welcome, <span id="dropdownName" class="font-semibold"></span></div>
+                                <div class="px-4 py-2 text-sm text-gray-600">Your posts: <span id="userPostCount" class="font-semibold">0</span></div>
+                                <div class="border-t my-1"></div>
+                                <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Logout</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-blue-600 to-purple-700 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="text-center">
+                <h1 class="hero-title text-4xl md:text-5xl font-bold mb-4">Welcome to ConnectSphere</h1>
+                <p class="hero-subtitle text-xl mb-8">Join the conversation. Share your thoughts. Connect with like-minded people.</p>
+                <div class="flex justify-center space-x-4">
+                    <button onclick="toggleAuthModal('login')" class="hero-cta bg-white text-primary px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition duration-200">
+                        Get Started
+                    </button>
+                    <button class="hero-cta border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary transition duration-200">
+                        Explore Topics
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Two Column Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Trending & Categories -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Trending Today -->
+                <div>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Trending Today</h2>
+                <button class="text-primary hover:text-blue-700 font-medium">
+                    View All →
+                </button>
+            </div>
+
+            <div class="trending-grid">
+                <div class="trending-card" style="background-image: url('https://images.unsplash.com/photo-1584824486539-53bb4646bdbc?q=80&w=1400&auto=format&fit=crop&sat=-100');">
+                    <div class="trending-overlay"></div>
+                    <div class="trending-content">
+                        <div class="trending-badge">Trending</div>
+                        <h3 class="trending-title">Does wearing mask actually effective ?</h3>
+                        <p class="trending-meta">Posted by Muhammad Ridlo</p>
+                    </div>
+                </div>
+
+                <div class="trending-card" style="background-image: url('https://images.unsplash.com/photo-1602524816386-0b34045f0f9a?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s=');">
+                    <div class="trending-overlay"></div>
+                    <div class="trending-content">
+                        <div class="trending-badge">Trending</div>
+                        <h3 class="trending-title">How to know that your friend is an impostor ?</h3>
+                        <p class="trending-meta">Posted by mister_riduro</p>
+                    </div>
+                </div>
+
+                <div class="trending-card" style="background-image: url('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s=');">
+                    <div class="trending-overlay"></div>
+                    <div class="trending-content">
+                        <div class="trending-badge">Trending</div>
+                        <h3 class="trending-title">The secret behind creating a good original song.</h3>
+                        <p class="trending-meta">Posted by mister_hikki</p>
+                    </div>
+                </div>
+
+                <div class="trending-card" style="background-image: url('https://images.unsplash.com/photo-1546182990-dffeafbe841d?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s=');">
+                    <div class="trending-overlay"></div>
+                    <div class="trending-content">
+                        <div class="trending-badge">Trending</div>
+                        <h3 class="trending-title">How to ensure that you are not dumb ?</h3>
+                        <p class="trending-meta">Posted by misteru_juned</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+                <!-- Categories Section -->
+                <div id="categories">
+                    <div class="flex justify-between items-center mb-8">
+                        <h2 class="text-3xl font-bold text-gray-900">Categories</h2>
+                        <button class="text-primary hover:text-blue-700 font-medium text-lg">
+                            Explore all →
+                        </button>
+                    </div>
+
+                    <div class="category-grid-perfect">
+                        <div class="category-card-perfect technology-card">
+                            <div class="category-header">
+                                <div class="category-image-wrapper">
+                                    <img src="image.jpg" alt="Technology" class="category-image">
+                                </div>
+                                <h3 class="category-title">Technology</h3>
+                            </div>
+                            <div class="category-body">
+                                <p class="category-description">Discussions about code, tools and infrastructure</p>
+                                <div class="category-stats">
+                                    <span class="stat-item">Threads: 39.8K</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="category-card-perfect music-card">
+                            <div class="category-header">
+                                <div class="category-image-wrapper">
+                                    <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=1000&auto=format&fit=crop" alt="Music & Arts" class="category-image">
+                                </div>
+                                <h3 class="category-title">Music & Arts</h3>
+                            </div>
+                            <div class="category-body">
+                                <p class="category-description">Share your creative works and projects</p>
+                                <div class="category-stats">
+                                    <span class="stat-item">Threads: 25.2K</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="category-card-perfect gaming-card">
+                            <div class="category-header">
+                                <div class="category-image-wrapper">
+                                    <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop" alt="Gaming" class="category-image">
+                                </div>
+                                <h3 class="category-title">Gaming</h3>
+                            </div>
+                            <div class="category-body">
+                                <p class="category-description">Talk about games, streaming, and more</p>
+                                <div class="category-stats">
+                                    <span class="stat-item">Threads: 13K | Posts 4.5K</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="category-card-perfect health-card">
+                            <div class="category-header">
+                                <div class="category-image-wrapper">
+                                    <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=1000&auto=format&fit=crop" alt="Health & Fitness" class="category-image">
+                                </div>
+                                <h3 class="category-title">Health & Fitness</h3>
+                            </div>
+                            <div class="category-body">
+                                <p class="category-description">Wellness tips and fitness journeys</p>
+                                <div class="category-stats">
+                                    <span class="stat-item">Threads: 18.7K</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </div>
+
+            <!-- Right Column: Recent Activity -->
+            <div class="lg:col-span-1">
+                <div class="sticky top-24">
+                    <!-- Explore Card -->
+                    <div class="mb-6">
+                        <div class="rounded-lg overflow-hidden shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+                            <div class="h-28 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1400&auto=format&fit=crop');"></div>
+                            <div class="p-4">
+                                <h3 class="text-lg font-bold">Explore Topics</h3>
+                                <p class="text-sm text-indigo-100 mt-2">Browse categories, trending discussions, and curated topics to get started.</p>
+                                <div class="mt-4">
+                                    <a href="#categories" class="inline-block bg-white text-indigo-600 font-semibold px-3 py-2 rounded shadow hover:opacity-90">Explore all →</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Recent Activity</h2>
+                <button class="text-primary hover:text-blue-700 font-medium">
+                            View All →
+                </button>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                <!-- Thread List -->
+                <div class="border-b border-gray-200 hover:bg-gray-50 transition duration-150 cursor-pointer">
+                            <div class="p-4">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <div class="user-avatar bg-blue-500">JD</div>
+                                    <div class="ml-3">
+                                        <span class="text-sm font-medium text-gray-900">John Doe</span>
+                                        <span class="text-xs text-gray-500 ml-2">3 hours ago</span>
+                                    </div>
+                                </div>
+                                        <h3 class="text-base font-semibold text-gray-900 mb-2">Getting Started with React 18 - Best Practices</h3>
+                                        <p class="text-gray-600 mb-3 text-sm">I've been exploring the new features in React 18 and wanted to share some best practices for concurrent rendering...</p>
+                                        <div class="flex items-center space-x-3 text-xs text-gray-500">
+                                    <span class="flex items-center">
+                                        <i class="fas fa-comments mr-1"></i> 42 replies
+                                    </span>
+                                    <span class="flex items-center">
+                                        <i class="fas fa-eye mr-1"></i> 1.2k views
+                                    </span>
+                                    <span class="flex items-center text-green-600">
+                                        <i class="fas fa-arrow-up mr-1"></i> 89 votes
+                                    </span>
+                                </div>
+                            </div>
+                                </div>
+                    </div>
+                </div>
+
+                <div class="border-b border-gray-200 hover:bg-gray-50 transition duration-150 cursor-pointer">
+                            <div class="p-4">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <div class="user-avatar bg-green-500">SG</div>
+                                    <div class="ml-3">
+                                        <span class="text-sm font-medium text-gray-900">Sarah Green</span>
+                                        <span class="text-xs text-gray-500 ml-2">5 hours ago</span>
+                                    </div>
+                                </div>
+                                        <h3 class="text-base font-semibold text-gray-900 mb-2">Best Workout Routines for Beginners</h3>
+                                        <p class="text-gray-600 mb-3 text-sm">Starting your fitness journey can be overwhelming. Here's a comprehensive guide to help beginners get started with safe and effective workout routines...</p>
+                                        <div class="flex items-center space-x-3 text-xs text-gray-500">
+                                    <span class="flex items-center">
+                                        <i class="fas fa-comments mr-1"></i> 28 replies
+                                    </span>
+                                    <span class="flex items-center">
+                                        <i class="fas fa-eye mr-1"></i> 890 views
+                                    </span>
+                                    <span class="flex items-center text-green-600">
+                                        <i class="fas fa-arrow-up mr-1"></i> 67 votes
+                                    </span>
+                                </div>
+                            </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-b border-gray-200 hover:bg-gray-50 transition duration-150 cursor-pointer">
+                            <div class="p-4">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center mb-2">
+                                            <div class="user-avatar bg-purple-500">MJ</div>
+                                            <div class="ml-3">
+                                                <span class="text-sm font-medium text-gray-900">Mike Johnson</span>
+                                                <span class="text-xs text-gray-500 ml-2">1 day ago</span>
+                                            </div>
+                                        </div>
+                                        <h3 class="text-base font-semibold text-gray-900 mb-2">AI Art Generation Tips</h3>
+                                        <p class="text-gray-600 mb-3 text-sm">Sharing some techniques I've learned for creating better AI-generated artwork using various tools and prompts...</p>
+                                        <div class="flex items-center space-x-3 text-xs text-gray-500">
+                                            <span class="flex items-center">
+                                                <i class="fas fa-comments mr-1"></i> 15 replies
+                                            </span>
+                                            <span class="flex items-center">
+                                                <i class="fas fa-eye mr-1"></i> 456 views
+                                            </span>
+                                            <span class="flex items-center text-green-600">
+                                                <i class="fas fa-arrow-up mr-1"></i> 23 votes
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hover:bg-gray-50 transition duration-150 cursor-pointer">
+                            <div class="p-4">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center mb-2">
+                                            <div class="user-avatar bg-orange-500">AL</div>
+                                            <div class="ml-3">
+                                                <span class="text-sm font-medium text-gray-900">Alex Lee</span>
+                                                <span class="text-xs text-gray-500 ml-2">2 days ago</span>
+                                            </div>
+                                        </div>
+                                        <h3 class="text-base font-semibold text-gray-900 mb-2">Best PC Builds for 2024</h3>
+                                        <p class="text-gray-600 mb-3 text-sm">Updated recommendations for gaming and productivity builds considering the latest hardware releases...</p>
+                                        <div class="flex items-center space-x-3 text-xs text-gray-500">
+                                            <span class="flex items-center">
+                                                <i class="fas fa-comments mr-1"></i> 67 replies
+                                            </span>
+                                            <span class="flex items-center">
+                                                <i class="fas fa-eye mr-1"></i> 2.1k views
+                                            </span>
+                                            <span class="flex items-center text-green-600">
+                                                <i class="fas fa-arrow-up mr-1"></i> 134 votes
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Community Stats -->
+        <div id="communityStats" class="bg-white rounded-lg shadow-sm p-6 mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Community Statistics</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                    <div class="text-3xl font-bold text-blue-600 mb-2">15,842</div>
+                    <div class="text-sm text-gray-600">Total Members</div>
+                </div>
+                <div class="text-center p-4 bg-green-50 rounded-lg">
+                    <div class="text-3xl font-bold text-green-600 mb-2">8,765</div>
+                    <div class="text-sm text-gray-600">Active Threads</div>
+                </div>
+                <div class="text-center p-4 bg-purple-50 rounded-lg">
+                    <div class="text-3xl font-bold text-purple-600 mb-2">124,321</div>
+                    <div class="text-sm text-gray-600">Total Posts</div>
+                </div>
+                <div class="text-center p-4 bg-orange-50 rounded-lg">
+                    <div class="text-3xl font-bold text-orange-600 mb-2">234</div>
+                    <div class="text-sm text-gray-600">Online Now</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer" class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">CommunityForum</h3>
+                    <p class="text-gray-400">A platform for meaningful discussions and community building.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Home</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Categories</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Members</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Guidelines</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Support</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Help Center</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Report Issue</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Contact Mods</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Connect</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-facebook"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-discord"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>© 2024 CommunityForum. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 opacity-0 pointer-events-none">
+        <div class="modal-content bg-white rounded-lg w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="authTitle" class="text-2xl font-bold text-gray-900">Welcome! </h3>
+                <button onclick="toggleAuthModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="loginForm" class="space-y-4">
+                <!-- Error message container -->
+                <div id="loginError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm"></div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                    <input id="loginEmail" type="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Enter your email" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input id="loginPassword" type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Enter your password" required>
+                </div>
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="ml-2 text-sm text-gray-600">Remember me</span>
+                    </label>
+                    <a href="#" class="text-sm text-primary hover:text-blue-700">Forgot password?</a>
+                </div>
+                <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
+                    Login In
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="space-y-4 hidden">
+                <!-- Error message container -->
+                <div id="registerError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm"></div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                    <input id="regName" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Your full name" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                    <input id="regEmail" type="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Enter your email">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input id="regPassword" type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Create a password">
+                </div>
+                <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
+                    Create account
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <p id="switchAuthText" class="text-sm text-gray-600">Don't have an account? <a href="#" onclick="toggleAuthModal('register')" class="text-primary hover:text-blue-700 font-medium">Sign up</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Post Modal -->
+    <div id="createPostModal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 opacity-0 pointer-events-none">
+        <div class="modal-content bg-white rounded-lg w-full max-w-2xl p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-900">Create New Post</h3>
+                <button onclick="closeCreatePostModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="createPostForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Post Title</label>
+                    <input id="postTitle" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Enter your post title" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                    <select id="postCategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" required>
+                        <option value="">Select a category</option>
+                        <option value="technology">Technology</option>
+                        <option value="music">Music & Arts</option>
+                        <option value="gaming">Gaming</option>
+                        <option value="health">Health & Fitness</option>
+                        <option value="general">General Discussion</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Post Content</label>
+                    <textarea id="postContent" rows="6" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Share your thoughts..." required></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeCreatePostModal()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                        <i class="fas fa-paper-plane mr-2"></i>Publish Post
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="updated_script.js"></script>
+</body>
+</html>
